@@ -1,0 +1,47 @@
+---
+- name: yum update
+  yum:
+    name: '*'
+    state: latest
+    update_cache: yes
+
+- name: easy_install pip
+  easy_install:
+    name: pip
+
+- name: install ansible
+  pip:
+    name: ansible
+    state: latest
+- name: install yum
+  yum:
+    name: "{{ item }}"
+  with_items:
+    - git
+    - docker
+    - python-docker-py
+
+- name: start docker
+  systemd:
+    name: docker
+    state: started
+
+- name: enable docker
+  systemd:
+    name: docker
+    enabled: yes
+
+- name: create temporary build directory
+  tempfile:
+    state: directory
+    suffix: build
+  register: tmpdir
+
+- name: git clone awx
+  git:
+    repo: 'https://github.com/ansible/awx.git'
+    dest: "{{ tmpdir.path }}"
+    clone: yes
+
+- name: install awx
+  shell: cd "{{ tmpdir.path }}/installer" && /bin/ansible-playbook -i inventory install.yml
